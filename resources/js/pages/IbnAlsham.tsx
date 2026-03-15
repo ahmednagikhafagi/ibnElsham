@@ -1,4 +1,6 @@
 import { Head } from '@inertiajs/react';
+import { useForm } from '@inertiajs/react';
+import { useState, useEffect } from 'react'; // 1. Import hooks
 
 function PageShell({ children }: { children: React.ReactNode }) {
     return (
@@ -48,62 +50,90 @@ function MenuSection() {
     );
 }
 
+
+
 function ContactFormSection() {
-    const handleSubmit = (event: React.FormEvent<HTMLFormElement>) => {
-        event.preventDefault();
-        // TODO: hook this up to a backend endpoint or email service.
+    const [showMessage, setShowMessage] = useState(false);
+    // Initialize Inertia form hook
+    const { data, setData, post, processing, errors, reset, wasSuccessful } = useForm({
+        name: '',
+        phone: '',
+        message: '',
+    });
+    useEffect(() => {
+        if (wasSuccessful) {
+            setShowMessage(true);
+            
+            const timer = setTimeout(() => {
+                setShowMessage(false);
+            }, 4000); // 4000ms = 4 seconds
+
+            return () => clearTimeout(timer); // Cleanup timer if component unmounts
+        }
+    }, [wasSuccessful]);
+
+    const handleSubmit = (e: React.FormEvent) => {
+        e.preventDefault();
+        post("/contact", {
+            onSuccess: () => reset(), // Clear form on success
+        });
     };
 
     return (
         <section className="mb-8 text-center">
             <h2 className="mb-1 font-serif text-3xl">Contact Us</h2>
-            <p className="mx-auto mb-4 max-w-xs text-xs leading-relaxed text-[#4a4a4a]">
-                We consider all the drivers of change gives you the components you
-                need to change to create a truly happens.
-            </p>
+            
+            {showMessage && (
+                <div className="mb-4 text-green-800 font-bold bg-green-100/50 p-2 rounded-lg animate-fade-in-out">
+                    Message sent successfully!
+                </div>
+            )}
 
-            <form
-                onSubmit={handleSubmit}
-                className="flex flex-col gap-3 text-left text-xs text-[#333333]"
-            >
+            <form onSubmit={handleSubmit} className="flex flex-col gap-3 text-left text-xs text-[#333333]">
                 <label className="flex flex-col gap-1.5">
                     <span>Name</span>
                     <input
                         type="text"
-                        placeholder="Enter your name"
-                        className="w-full rounded-full border-0 bg-[#d7b18b] px-4 py-2.5 text-sm placeholder:text-[#674d39]/70 focus:outline-none focus:ring-2 focus:ring-[#303841]"
+                        value={data.name}
+                        onChange={e => setData('name', e.target.value)}
+                        className="w-full rounded-full border-0 bg-[#d7b18b] px-4 py-2.5 text-sm"
                     />
+                    {errors.name && <span className="text-red-600">{errors.name}</span>}
                 </label>
 
                 <label className="flex flex-col gap-1.5">
                     <span>Phone</span>
                     <input
                         type="tel"
-                        placeholder="Enter your phone"
-                        className="w-full rounded-full border-0 bg-[#d7b18b] px-4 py-2.5 text-sm placeholder:text-[#674d39]/70 focus:outline-none focus:ring-2 focus:ring-[#303841]"
+                        value={data.phone}
+                        onChange={e => setData('phone', e.target.value)}
+                        className="w-full rounded-full border-0 bg-[#d7b18b] px-4 py-2.5 text-sm"
                     />
+                    {errors.phone && <span className="text-red-600">{errors.phone}</span>}
                 </label>
 
                 <label className="flex flex-col gap-1.5">
                     <span>Message</span>
                     <textarea
                         rows={4}
-                        placeholder="Write your message"
-                        className="w-full resize-none rounded-2xl border-0 bg-[#d7b18b] px-4 py-3 text-sm placeholder:text-[#674d39]/70 focus:outline-none focus:ring-2 focus:ring-[#303841]"
+                        value={data.message}
+                        onChange={e => setData('message', e.target.value)}
+                        className="w-full resize-none rounded-2xl border-0 bg-[#d7b18b] px-4 py-3 text-sm"
                     />
+                    {errors.message && <span className="text-red-600">{errors.message}</span>}
                 </label>
 
                 <button
                     type="submit"
-                    className="mt-1 w-full rounded-full bg-[#303841] px-4 py-3 text-sm font-medium text-[#f5f5f5] transition hover:-translate-y-0.5 hover:bg-[#1f252b] hover:shadow-lg"
+                    disabled={processing}
+                    className="mt-1 w-full rounded-full bg-[#303841] px-4 py-3 text-sm font-medium text-[#f5f5f5] disabled:opacity-50"
                 >
-                    Send
+                    {processing ? 'Sending...' : 'Send'}
                 </button>
             </form>
         </section>
     );
 }
-
 function MapSection() {
     return (
         <section className="mb-6 text-center">
